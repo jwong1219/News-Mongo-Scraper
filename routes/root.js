@@ -11,6 +11,10 @@ const router = express.Router();
 
 // set up router, the root route of this router is "/"
 router.get('/', function(req, res) {
+  // create a response obj
+  let resObj = {
+    newArticles: false
+  };
   // get html from reuters
   request('https://www.reuters.com', function (error, response, body) {
     // console.log(body);
@@ -25,11 +29,46 @@ router.get('/', function(req, res) {
       result.summary = $(this).children(".story-content").children("p").text();
       result.img = $(this).children(".story-photo").children("a").children("img").attr("src");
       result.url = "https://www.reuters.com" + $(this).children(".story-photo").children("a").attr("href");
-      console.log(result);
+      // console.log(result);
       elements.push(result);
     });
+
+    elements.forEach(function(article) {
+      db.Article
+        // check if article already exists by looking for an identical headline
+        .findOne({"headline": article.headline})
+        .then(function(data) {
+          // if a matching headline was not found, create a new article document
+          if(!data) {
+            db.Article
+              .create(article)
+              .then(function(result) {
+                console.log({result});
+                // change the value in the response object to true so the client knows new articles were scraped and recorded in the db
+                resObj.newArticles = true;
+              }).catch(function(err) {
+                console.log({err});
+              })
+          }
+        })
+        .catch(function(err) {
+          console.log(err);
+        })
+    })
+    db.Article
+      .find({}, null, {"limit": 20})
+      .then(function(dbArticles) {
+        console.log(dbArticles);
+        resObj.articles = dbArticles;
+        res.json(resObj);
+      })
+      .catch(function(err) {
+        console.log({err});
+        resObj.error = err;
+        res.json(resObj);
+      })
     
-    res.json(elements);
+    // res.json(resObj);
   })
 })
 
