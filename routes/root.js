@@ -20,6 +20,7 @@ router.get('/', function(req, res) {
     // console.log(body);
     // load the html into cheerio
     const $ = cheerio.load(body);
+
     let elements = [];
     // grab the story divs
     $("#hp-top-news-low .story").each(function(i, element) {
@@ -27,9 +28,9 @@ router.get('/', function(req, res) {
 
       result.headline = $(this).children(".story-content").children("a").children(".story-title").text().replace("\n\t\t\t\t\t\t\t\t", "");
       result.summary = $(this).children(".story-content").children("p").text();
-      result.img = $(this).children(".story-photo").children("a").children("img").attr("src");
+      result.img = $(this).children(".story-photo").children("a").children("img").attr("org-src");
       result.url = "https://www.reuters.com" + $(this).children(".story-photo").children("a").attr("href");
-      // console.log(result);
+      console.log(result);
       elements.push(result);
     });
 
@@ -58,9 +59,11 @@ router.get('/', function(req, res) {
     db.Article
       .find({}, null, {"limit": 20})
       .then(function(dbArticles) {
-        console.log(dbArticles);
+        // console.log(dbArticles);
         resObj.articles = dbArticles;
-        res.json(resObj);
+        console.log(resObj.articles);
+        res.render("index", {articles: resObj.articles});
+        // res.send(resObj);
       })
       .catch(function(err) {
         console.log({err});
